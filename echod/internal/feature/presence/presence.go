@@ -57,7 +57,7 @@ const (
 
 	// zoneChange is how much one zone's share of the picture's brightness has to move to count as
 	// changed, and tooDark the mean below which the picture is noise rather than a room.
-	zoneChange = 0.25
+	zoneChange = 0.40
 	tooDark    = 12
 
 	// soundRun is how many ticks in a row the room has to be over the sound level to count, and
