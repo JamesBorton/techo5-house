@@ -40,6 +40,7 @@ type Config struct {
 	Timers     Timers     `json:"timers"`
 	Dashboard  Dashboard  `json:"dashboard"`
 	Calendar   Calendar   `json:"calendar"`
+	Presence   Presence   `json:"presence"`
 }
 
 // Defaults is a device nobody has set anything on.
@@ -56,6 +57,7 @@ func Defaults() Config {
 		Screen:     defaultScreen(),
 		Home:       defaultHome(),
 		Security:   defaultSecurity(),
+		Presence:   defaultPresence(),
 
 		// Only the stop word. The slots are absent until something chooses one, and Slot fills in the
 		// defaults for whichever have not been.
@@ -94,6 +96,7 @@ func (w Writer) Sendspin() SendspinWriter     { return SendspinWriter(w) }
 func (w Writer) Home() HomeWriter             { return HomeWriter(w) }
 func (w Writer) Dashboard() DashboardWriter   { return DashboardWriter(w) }
 func (w Writer) Calendar() CalendarWriter     { return CalendarWriter(w) }
+func (w Writer) Presence() PresenceWriter     { return PresenceWriter(w) }
 
 // Wake names one slot, since every wake word setting belongs to one.
 func (w Writer) Wake(slot int) WakeWriter { return WakeWriter{st: w.st, slot: slot} }
