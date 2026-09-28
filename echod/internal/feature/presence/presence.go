@@ -118,7 +118,7 @@ func build() *Presence {
 				ObjectID: "presence_hold", Name: "Presence hold", Icon: "mdi:timer-sand",
 				Category: esphome.CategoryConfig,
 			},
-			Min: 1, Max: 60, Step: 1, Unit: "min", Mode: esphome.NumberBox,
+			Min: 10, Max: 3600, Step: 5, Unit: "s", Mode: esphome.NumberBox,
 		},
 		motion: &esphome.Number{
 			Base: esphome.Base{
@@ -202,7 +202,7 @@ func (p *Presence) Restore(c config.Config) {
 	p.sound.Set(float32(pc.Sound))
 	p.occupied.Set(false)
 	slog.Info("restored", "what", "presence", "enabled", pc.Enabled, "camera", pc.Camera,
-		"hold_min", pc.Hold, "motion_pct", pc.Motion, "sound_pct", pc.Sound)
+		"hold_s", pc.Hold, "motion_pct", pc.Motion, "sound_pct", pc.Sound)
 }
 
 // seen is a sign of somebody. It is called from other components' goroutines, so it only records.
@@ -270,10 +270,11 @@ func (p *Presence) Run(ctx context.Context) error {
 		}
 
 		// The hold.
+		hold := time.Duration(pc.Hold) * time.Second
 		p.mu.Lock()
 		present, last := p.present, p.lastSeen
 		p.mu.Unlock()
-		if present && now.Sub(last) > time.Duration(pc.Hold)*time.Minute {
+		if present && now.Sub(last) > hold {
 			p.clear()
 			present = false
 		}
@@ -281,7 +282,8 @@ func (p *Presence) Run(ctx context.Context) error {
 		// The camera, now and then.
 		if pc.Camera && !p.camDead.Load() && now.After(nextLook) && !p.looking.Load() {
 			if present {
-				nextLook = now.Add(lookOccupied)
+				// Twice within the hold at least, so a still room is looked at again before it lapses.
+				nextLook = now.Add(min(lookOccupied, max(hold/2, 5*time.Second)))
 			} else {
 				nextLook = now.Add(lookEmpty)
 			}

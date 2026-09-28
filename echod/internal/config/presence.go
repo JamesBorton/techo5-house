@@ -9,8 +9,8 @@ type Presence struct {
 	// Camera lets it look for movement as well as listen and feel for touches.
 	Camera bool `json:"camera"`
 
-	// Hold is how long, in minutes, the room counts as occupied after the last sign of anybody.
-	Hold int `json:"hold"`
+	// Hold is how long, in seconds, the room counts as occupied after the last sign of anybody.
+	Hold int `json:"hold_s"`
 
 	// Motion is how much of the picture has to change, in percent of its zones, to count as movement.
 	Motion int `json:"motion"`
@@ -20,7 +20,7 @@ type Presence struct {
 	Sound int `json:"sound"`
 }
 
-const DefaultPresenceHold = 5
+const DefaultPresenceHold = 300
 
 const DefaultPresenceMotion = 3
 
