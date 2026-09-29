@@ -22,7 +22,8 @@ latch still takes the camera away until a reboot (upstream behaviour); presence 
 - **Living Room Echo (Show 8, `crown`):** slot b = the official v0.9.14 rootfs with only
   `/usr/local/bin/techo5` replaced by our build (`tools/house/repack_rootfs.py`), installed with
   `slotctl install`. Slot a is the official v0.9.14, the fallback.
-- **Office Echo (Show 5):** stock TECHO5 (none of this).
+- **Office Echo (Show 5, `cronos`):** the same package, installed the same way on 2026-09-29 (slot a = ours,
+  slot b = official v0.9.14). One armv7 daemon serves both models.
 - **dashcast:** built from `dashcast/` on Hermes (`/opt/dashcast`), with `DASHCAST_WARM=0`.
 
 Version string: `v0.9.14_presence` (the `_build` suffix is the only form Home Assistant's update check
