@@ -15,6 +15,7 @@ import (
 	"image/png"
 	"log/slog"
 	"net"
+	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -166,7 +167,13 @@ func serve(ctx context.Context, b *browser, g *guard, cfg config, raw net.Conn) 
 	// The tab: this screen's parked one if it left a moment ago (warm.go), or a new one. It outlives
 	// the session, so it is opened against the server's context, not this connection's.
 	key := fmt.Sprintf("%s|%dx%d|%s|%t", h.Name, h.W, h.H, h.Path, h.Kiosk)
-	w := warm.take(key)
+	// DASHCAST_WARM=0: no parked tabs. A thawed tab stopped taking touches on the TECHO5 Echos,
+	// so every connection gets a fresh one.
+	noWarm := os.Getenv("DASHCAST_WARM") == "0"
+	var w *warmTab
+	if !noWarm {
+		w = warm.take(key)
+	}
 	reused := w != nil
 	if !reused {
 		tab, closeTab, err := b.open(ctx, h.Path, h.W, h.H, allowed, h.Kiosk)
@@ -179,8 +186,12 @@ func serve(ctx context.Context, b *browser, g *guard, cfg config, raw net.Conn) 
 	} else {
 		slog.Info("dashboard picked up where it was left", "name", h.Name)
 	}
-	// Parked when this session ends, for the screen to come back to.
-	defer warm.park(w)
+	// Parked when this session ends, for the screen to come back to (or closed, with DASHCAST_WARM=0).
+	if noWarm {
+		defer w.close()
+	} else {
+		defer warm.park(w)
+	}
 	tab := w.ctx
 
 	d := &differ{}
