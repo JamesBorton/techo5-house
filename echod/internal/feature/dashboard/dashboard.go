@@ -52,10 +52,12 @@ type Feature struct {
 	// Changed fires when there is something new to draw; listeners must not block.
 	Changed hook.Hook[struct{}]
 
-	mode  *esphome.Select
-	idle  *esphome.Switch
-	kiosk *esphome.Switch
-	board *esphome.Select
+	mode   *esphome.Select
+	idle   *esphome.Switch
+	kiosk  *esphome.Switch
+	tap    *esphome.Switch
+	forget *esphome.Number
+	board  *esphome.Select
 
 	mu        sync.Mutex
 	stream    *stream  // while the page is up in streamed mode
@@ -109,6 +111,23 @@ func Get() *Feature {
 					Category: esphome.CategoryConfig,
 				},
 			},
+			tap: &esphome.Switch{
+				Base: esphome.Base{
+					ObjectID: "screen_dashboard_tap",
+					Name:     "Tap opens the dashboard",
+					Icon:     "mdi:gesture-tap",
+					Category: esphome.CategoryConfig,
+				},
+			},
+			forget: &esphome.Number{
+				Base: esphome.Base{
+					ObjectID: "screen_dashboard_forget",
+					Name:     "Dashboard closes after",
+					Icon:     "mdi:timer-outline",
+					Category: esphome.CategoryConfig,
+				},
+				Min: 1, Max: 60, Step: 1, Unit: "min", Mode: esphome.NumberBox,
+			},
 			board: &esphome.Select{
 				Base: esphome.Base{
 					ObjectID: "screen_dashboard_view",
@@ -127,6 +146,18 @@ func Get() *Feature {
 			}
 			f.Changed.Emit(struct{}{})
 		}
+		f.tap.OnCommand = func(on bool) {
+			f.tap.Set(on)
+			if err := config.Set().Dashboard().TapOpens(on); err != nil {
+				slog.Error("saving the dashboard tap setting failed", "err", err)
+			}
+		}
+		f.forget.OnCommand = func(v float32) {
+			f.forget.Set(v)
+			if err := config.Set().Dashboard().Forget(int(v)); err != nil {
+				slog.Error("saving the dashboard forget setting failed", "err", err)
+			}
+		}
 		// Kiosk is asked for when the screen connects to dashcast, so a change reconnects.
 		f.kiosk.OnCommand = func(on bool) {
 			f.kiosk.Set(on)
@@ -144,7 +175,7 @@ func Get() *Feature {
 func (f *Feature) Name() string { return "dashboard" }
 
 func (f *Feature) Entities() []esphome.Entity {
-	return []esphome.Entity{f.mode, f.idle, f.kiosk, f.board}
+	return []esphome.Entity{f.mode, f.idle, f.kiosk, f.tap, f.forget, f.board}
 }
 
 func (f *Feature) Restore(c config.Config) {
@@ -152,6 +183,8 @@ func (f *Feature) Restore(c config.Config) {
 	f.idle.Set(c.Dashboard.Idle)
 	slog.Info("restored", "what", f.idle.ObjectID, "using", c.Dashboard.Idle)
 	f.kiosk.Set(c.Dashboard.Kiosk)
+	f.tap.Set(c.Dashboard.TapOpens)
+	f.forget.Set(float32(f.ForgetAfter() / time.Minute))
 	f.listBoards(c.Dashboard)
 }
 
@@ -334,6 +367,20 @@ func (f *Feature) SetServer(addr, key string) error {
 func (f *Feature) Mode() config.DashboardMode { return config.Get().Dashboard.Mode }
 
 // Idle is whether the dashboard stands in for the clock.
+// TapOpens reports whether a tap on the clock should bring the dashboard up.
+func (f *Feature) TapOpens() bool {
+	d := config.Get().Dashboard
+	return d.TapOpens && d.Mode != config.DashboardOff
+}
+
+// ForgetAfter is how long an opened dashboard stays up untouched.
+func (f *Feature) ForgetAfter() time.Duration {
+	if m := config.Get().Dashboard.Forget; m > 0 {
+		return time.Duration(m) * time.Minute
+	}
+	return 10 * time.Minute
+}
+
 func (f *Feature) Idle() bool {
 	d := config.Get().Dashboard
 	return d.Idle && d.Mode != config.DashboardOff

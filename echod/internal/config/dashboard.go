@@ -23,6 +23,14 @@ type Dashboard struct {
 	// is a real slice of it. Only dashcast can do it; a drawn dashboard has no bar to hide.
 	Kiosk bool `json:"kiosk,omitempty"`
 
+	// TapOpens has a tap on the clock bring the dashboard up instead of starting a voice turn, for a
+	// screen that is a picture until somebody reaches for it.
+	TapOpens bool `json:"tap_opens,omitempty"`
+
+	// Forget is how many minutes an opened dashboard stays up untouched before the clock comes back.
+	// Zero is the built-in ten.
+	Forget int `json:"forget,omitempty"`
+
 	// Known is the dashboards Home Assistant had when last asked, kept so the list of them is there
 	// from the start and not only once Home Assistant has been asked again.
 	Known []DashboardChoice `json:"known,omitempty"`
@@ -77,6 +85,14 @@ func (w DashboardWriter) Server(addr, key string) error {
 
 func (w DashboardWriter) Kiosk(v bool) error {
 	return w.st.Update(func(c *Config) { c.Dashboard.Kiosk = v })
+}
+
+func (w DashboardWriter) TapOpens(v bool) error {
+	return w.st.Update(func(c *Config) { c.Dashboard.TapOpens = v })
+}
+
+func (w DashboardWriter) Forget(v int) error {
+	return w.st.Update(func(c *Config) { c.Dashboard.Forget = v })
 }
 
 func (w DashboardWriter) Idle(v bool) error {

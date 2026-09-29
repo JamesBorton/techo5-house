@@ -50,6 +50,11 @@ func (d *Display) openDashboard() bool {
 	return true
 }
 
+// tapOpensDashboard is a tap on the clock bringing the dashboard up, when the device is set to.
+func (d *Display) tapOpensDashboard() bool {
+	return dashboard.Get().TapOpens() && d.openDashboard()
+}
+
 // closeDashboard takes the dashboard down: back to the clock, and when the dashboard is the idle page,
 // the clock for a while.
 func (d *Display) closeDashboard() {
@@ -69,7 +74,7 @@ func (d *Display) dashScene(s *scene, sheetOrDrawer bool) {
 	f := dashboard.Get()
 	mode := f.Mode()
 	d.mu.Lock()
-	if d.dash && time.Since(d.dashTouched) > dashForget {
+	if d.dash && time.Since(d.dashTouched) > f.ForgetAfter() {
 		d.dash = false
 	}
 	asked := d.dash

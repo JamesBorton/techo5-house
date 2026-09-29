@@ -922,6 +922,9 @@ func (d *Display) gesture(g touch.Gesture) {
 			media.Get().Transport(media.TransportToggle)
 			return
 		}
+		if idle && d.tapOpensDashboard() {
+			return
+		}
 		voice.Get().Action()
 	case touch.SwipeLeft:
 		// From the right edge it brings the drawer in, on the tab it was last on.
